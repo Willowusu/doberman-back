@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { logAction } = require('../middlewares');
+const { sendEmail } = require('../services/mailer');
+
 
 
 exports.createSystemUser = async (req, res) => {
@@ -57,6 +59,7 @@ exports.sendMagicLink = async (req, res) => {
 
         // 2. Send Email
         const magicLink = `http://localhost:5173/verify?token=${token}`;
+        sendEmail('khorus43@gmail.com', 'Test Subject', 'Login', magicLink); //TODO: Replace with actual user email
         console.log(`Magic link for ${email}: ${magicLink}`);
         // await mailer.sendMail({
         //     to: email,
