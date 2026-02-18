@@ -7,7 +7,7 @@ const { logAction } = require('../middlewares');
 
 exports.createBusiness = async (req, res) => {
     try {
-        const { name, email, phone, address, webhookUrl } = req.body;
+        const { name, email, phone, address, webhookUrl, domain } = req.body;
 
         //generate a unique API key
         let apiKey = generateApiKey.apiKey();
