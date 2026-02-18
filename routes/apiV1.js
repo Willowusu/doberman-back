@@ -131,6 +131,9 @@ router.patch('/rules/:id', protect, ensureBusinessContext, ruleController.toggle
 // DELETE /rules/:id
 router.delete('/rules/:id', protect, ensureBusinessContext, ruleController.deleteRule);
 
+router.post('/rules/test-logic', protect, ensureBusinessContext, ruleController.testRuleLogic);
+
+
 /**
  * Lists
  */

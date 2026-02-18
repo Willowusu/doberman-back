@@ -1,7 +1,10 @@
 const response = require('../services/response');
 const Rule = require('../models/rule');
+const Event = require('../models/event');
 const Decision = require('../models/decision');
 const { logAction } = require('../middlewares');
+const jsonLogic = require('json-logic-js');
+
 
 
 exports.createRule = async (req, res) => {
@@ -187,3 +190,49 @@ exports.toggleRuleStatus = async (req, res) => {
         res.json(response(500, null, 'Internal Server Error'));
     }
 }
+
+exports.testRuleLogic = async (req, res) => {
+    try {
+        const { logic } = req.body;
+        const business = req.session.businessId;
+
+        // 1. Fetch the last 50-100 real events for this business
+        const sampleEvents = await Event.find({ business })
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        // 2. Run the draft logic against each event
+        const results = sampleEvents.map(event => {
+            // Prepare the data object exactly how the engine sees it
+            const data = {
+                ...event.payload,
+                domain: event.domain,
+                ipAddress: event.ipAddress,
+                enrichedData: event.enrichedData,
+                metrics: {}, // You could optionally fetch real metrics here
+            };
+
+            const isHit = jsonLogic.apply(logic, data);
+
+            return {
+                eventId: event._id,
+                action_type: event.action_type,
+                amount: event.payload?.amount || 0,
+                isHit
+            };
+        });
+
+        const totalHits = results.filter(r => r.isHit).length;
+
+        res.json(response(200, {
+            totalChecked: results.length,
+            totalHits,
+            hitRate: `${((totalHits / results.length) * 100).toFixed(1)}%`,
+            sampleHits: results.filter(r => r.isHit).slice(0, 5)
+        }, "Test completed"));
+
+    } catch (error) {
+        console.error('Test Rule Error:', error);
+        res.status(500).json(response(500, null, 'Error testing rule logic'));
+    }
+};
