@@ -13,10 +13,12 @@ var apiV1Router = require('./routes/apiV1');
 
 var app = express();
 
+app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL, // Your EJS server URL
-  credentials: true // Crucial for cookies
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] // Added OPTIONS for preflight
 }));
 
 app.use(logger('dev'));
@@ -28,12 +30,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "dev-secret",
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Required for secure cookies over a proxy
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    // Set the duration here in milliseconds
-    maxAge: 1000 * 60 * 60 * 24 // 24 Hours
+    // On Render, this MUST be true. If it's false, browser won't store it.
+    secure: true,
+    // This MUST be 'none' for cross-site (front.render -> back.render)
+    // If it's 'lax', the cookie won't be sent on the /generate-mfa request.
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24
   }
 }));
 

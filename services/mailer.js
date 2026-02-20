@@ -4,29 +4,16 @@ require('dotenv').config();
 
 // Create a transporter object using your SMTP details
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
+    service: 'gmail', // Use 'gmail' or specify your custom SMTP host
     auth: {
-        user: process.env.NODEMAILER_EMAIL,
-        pass: process.env.NODEMAILER_PASSWORD,
+        user: process.env.NODEMAILER_EMAIL, // Your email address
+        pass: process.env.NODEMAILER_PASSWORD // Your generated app password
     },
-    // ADD THIS LINE
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    dnsLookup: (hostname, options, callback) => {
-        // This forces DNS to resolve to IPv4 only
-        require('dns').lookup(hostname, { family: 4 }, callback);
+    tls: {
+        // This often helps with cloud hosting networking quirks
+        rejectUnauthorized: false
     }
 });
-// const transporter = nodemailer.createTransport({
-//     service: 'gmail', // Use 'gmail' or specify your custom SMTP host
-//     auth: {
-//         user: process.env.NODEMAILER_EMAIL, // Your email address
-//         pass: process.env.NODEMAILER_PASSWORD // Your generated app password
-//     }
-// });
 
 const html = (loginUrl) => {
     return `
