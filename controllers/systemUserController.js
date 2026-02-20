@@ -67,8 +67,8 @@ exports.sendMagicLink = async (req, res) => {
         //     html: `<a href="${magicLink}">Click here to log in</a>`
         // });
 
-        
-        res.json(response(200, null, 'Magic link sent successfully'));
+        //for the purpose of uat return link
+        res.json(response(200, {link: magicLink}, 'Magic link sent successfully'));
     }
     catch (error) {
         console.error('Error sending magic link:', error);
