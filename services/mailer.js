@@ -4,14 +4,13 @@ require('dotenv').config();
 
 // Create a transporter object using your SMTP details
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use 'gmail' or specify your custom SMTP host
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    family: 4, // 👈 FORCE IPv4
     auth: {
-        user: process.env.NODEMAILER_EMAIL, // Your email address
-        pass: process.env.NODEMAILER_PASSWORD // Your generated app password
-    },
-    tls: {
-        // This often helps with cloud hosting networking quirks
-        rejectUnauthorized: false
+        user: process.env.NODEMAILER_EMAIL,
+        pass: process.env.NODEMAILER_PASSWORD
     }
 });
 
