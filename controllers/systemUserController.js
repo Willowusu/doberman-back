@@ -59,7 +59,7 @@ exports.sendMagicLink = async (req, res) => {
 
         // 2. Send Email
         const magicLink = `http://localhost:5173/verify?token=${token}`;
-        sendEmail('khorus43@gmail.com', 'Test Subject', 'Login', magicLink); //TODO: Replace with actual user email
+        sendEmail(user.email, 'RiskGuard Login', 'Login', magicLink); //TODO: Replace with actual user email
         console.log(`Magic link for ${email}: ${magicLink}`);
         // await mailer.sendMail({
         //     to: email,
