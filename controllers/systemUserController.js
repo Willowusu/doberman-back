@@ -58,7 +58,7 @@ exports.sendMagicLink = async (req, res) => {
         }, 'LOGIN_REQUESTED', 'Authentication', { method: 'Magic Link' });
 
         // 2. Send Email
-        const magicLink = `http://localhost:5173/verify?token=${token}`;
+        const magicLink = `https://doberman-front.onrender.com/verify?token=${token}`;
         sendEmail(user.email, 'RiskGuard Login', 'Login', magicLink); //TODO: Replace with actual user email
         console.log(`Magic link for ${email}: ${magicLink}`);
         // await mailer.sendMail({
