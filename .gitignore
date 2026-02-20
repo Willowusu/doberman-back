@@ -1,7 +1,6 @@
 # Dependency directories
 node_modules/
 jspm_packages/
-peplist/
 
 # Optional npm cache directory
 .npm
