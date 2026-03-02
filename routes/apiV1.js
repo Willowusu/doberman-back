@@ -130,9 +130,8 @@ router.patch('/rules/:id', protect, ensureBusinessContext, ruleController.toggle
 // Delete rule
 // DELETE /rules/:id
 router.delete('/rules/:id', protect, ensureBusinessContext, ruleController.deleteRule);
-
+// test rule logic
 router.post('/rules/test-logic', protect, ensureBusinessContext, ruleController.testRuleLogic);
-
 
 /**
  * Lists
@@ -151,6 +150,9 @@ router.post('/get-lists', protect, ensureBusinessContext, listController.getList
 // Override a decision
 // PATCH /:id/override
 router.patch('/:id/override', protect, ensureBusinessContext, decisionController.overrideDecision);
+
+
+router.get('/transactions/:type', protect, ensureBusinessContext, eventController.getEventTransactionsByType);
 
 /**
  * Customers

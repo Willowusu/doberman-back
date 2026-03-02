@@ -11,6 +11,7 @@ const alertService = require('../services/alertService');
 const caseService = require('../services/caseService');   // JUNI Case Management
 const { checkSanctions } = require('../services/sanctionsCheck');
 const { searchPepList } = require('../services/pepService');
+const mongoose = require('mongoose');
 
 
 const { logAction } = require('../middlewares');
@@ -19,7 +20,7 @@ const { logAction } = require('../middlewares');
 
 exports.createEvent = async (req, res) => {
     try {
-       
+
         const { actionType, payload } = req.body;
         payload.domain = req.domain || 'PSP'; // Set domain from session or default
         const externalId = payload?.merchantId;
@@ -50,7 +51,7 @@ exports.createEvent = async (req, res) => {
                 recipient: recipientHit,
                 anyMatch: (senderHit?.found || recipientHit?.found) || false
             };
-            
+
             // Parallel Sanctions Check for Remittance
             const [senderPepHit, recipientPepHit] = await Promise.all([
                 searchPepList(payload?.senderName),
@@ -197,6 +198,7 @@ exports.createEvent = async (req, res) => {
 
 //this gets the events and the decisions attached to the events
 exports.getEvents = async (req, res) => {
+    let limit = parseInt(req.query.limit) || 50; // Default to 50 if not provided
     try {
         const businessId = req.session.businessId;
 
@@ -207,7 +209,7 @@ exports.getEvents = async (req, res) => {
         // Query only for documents matching this specific business
         const events = await Decision.find({ business: businessId }).populate('eventId')
             .sort({ createdAt: -1 })
-            .limit(50);
+            .limit(limit);
 
         // LOG: Data Access
         // It is important to know who viewed the master event list for audit compliance.
@@ -218,5 +220,50 @@ exports.getEvents = async (req, res) => {
         res.json(response(200, events, "Events retrieved successfully"));
     } catch (error) {
         res.json(response(500, null, "Error fetching events"));
+    }
+};
+
+
+exports.getEventTransactionsByType = async (req, res) => {
+    try {
+        const { type } = req.params;
+        const businessId = new mongoose.Types.ObjectId(req.businessId || req.session.businessId);
+
+        // Map sidebar terms to the specific string used in your JSON payload
+        const typeMap = {
+            'collections': 'collection',
+            'remittance': 'remittance',
+            'payout': 'payout',
+            'topup': 'top-up',
+            'transfer': 'transfer'
+        };
+
+        const targetType = typeMap[type.toLowerCase()];
+
+        // We query Decisions, populate the Event, and filter by the payload inside the event
+        const decisions = await Decision.find({ business: businessId })
+            .populate({
+                path: 'eventId',
+                match: { 'payload.transactionType': targetType } // This filters the populated doc
+            })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Because .populate({ match }) returns null for eventId if it doesn't match, 
+        // we must filter those out manually from the result array.
+        const filteredResults = decisions.filter(d => d.eventId !== null);
+
+        // Limit to 50 for performance
+        const finalData = filteredResults.slice(0, 50);
+
+        res.status(200).json({
+            status: 200,
+            data: finalData,
+            message: `Filtered ${type} retrieved successfully`
+        });
+
+    } catch (error) {
+        console.error("Transaction Fetch Error:", error);
+        res.status(500).json({ status: 500, message: "Error fetching transactions" });
     }
 };
