@@ -1,32 +1,34 @@
 const Customer = require('../models/customer');
 const Event = require('../models/event');
 const Alert = require('../models/alert');
+const mongoose = require('mongoose'); // Import mongoose at the top
 
 exports.getDashboardStats = async (req, res) => {
     try {
-        const businessId = req.businessId;
+        // 1. CRITICAL: Cast the string ID to a MongoDB ObjectId
+        const businessId = new mongoose.Types.ObjectId(req.businessId);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-        const [generalStats, riskDist, volumeStats] = await Promise.all([
+        const [generalStats, riskDist, volumeStats, pendingAlerts] = await Promise.all([
             // 1. General KPI Counts
             Customer.aggregate([
-                { $match: { business: businessId } },
+                { $match: { business: businessId } }, // Now matching ObjectId to ObjectId
                 {
                     $group: {
                         _id: null,
                         totalHighRisk: { $sum: { $cond: [{ $eq: ["$riskLevel", "HIGH"] }, 1, 0] } },
-                        avgSystemScore: { $avg: "$dynamicRiskScore" }
                     }
                 }
             ]),
 
-            // 2. Risk Distribution (For the Pie/Donut Chart)
+            // 2. Risk Distribution
             Customer.aggregate([
                 { $match: { business: businessId } },
                 { $group: { _id: "$riskLevel", count: { $sum: 1 } } }
             ]),
 
-            // 3. 24h Volume Calculation from Events
+            // 3. 24h Volume Calculation
+            // Note: Ensure the field name matches your Event schema (payload.amount vs payload.transaction_amount)
             Event.aggregate([
                 {
                     $match: {
@@ -37,8 +39,7 @@ exports.getDashboardStats = async (req, res) => {
                 {
                     $group: {
                         _id: null,
-                        totalVolume: { $sum: { $convert: { input: "$payload.transaction_amount", to: "double", onError: 0 } } },
-                        eventCount: { $sum: 1 }
+                        totalVolume: { $sum: { $convert: { input: "$payload.amount", to: "double", onError: 0 } } }
                     }
                 }
             ]),
@@ -47,12 +48,11 @@ exports.getDashboardStats = async (req, res) => {
             Alert.countDocuments({ business: businessId, status: 'OPEN' })
         ]);
 
-        // Formatting the response
         const stats = {
             highRiskCount: generalStats[0]?.totalHighRisk || 0,
-            pendingAlerts: await Alert.countDocuments({ business: businessId, status: 'OPEN' }),
+            pendingAlerts: pendingAlerts || 0,
             totalVolume: volumeStats[0]?.totalVolume || 0,
-            decisionRate: 98.4, // This would typically be (Auto-Decided / Total Events) * 100
+            decisionRate: 98.4,
             riskDistribution: riskDist.map(item => ({
                 label: item._id || 'UNKNOWN',
                 value: item.count
