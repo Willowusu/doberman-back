@@ -1,5 +1,6 @@
+require('dotenv').config();
 const response = require('../services/response');
-const SystemUser = require('../models/systemUser');
+const SystemUser = require('../models/SystemUser');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
@@ -58,8 +59,9 @@ exports.sendMagicLink = async (req, res) => {
         }, 'LOGIN_REQUESTED', 'Authentication', { method: 'Magic Link' });
 
         // 2. Send Email
-        const magicLink = `https://doberman-front.onrender.com/verify?token=${token}`;
-        sendEmail(user.email, 'RiskGuard Login', 'Login', magicLink); //TODO: Replace with actual user email
+        const magicLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
+
+        sendEmail('khorus43@gmail.com', 'Test Subject', 'Login', magicLink);
         console.log(`Magic link for ${email}: ${magicLink}`);
         // await mailer.sendMail({
         //     to: email,
@@ -67,8 +69,8 @@ exports.sendMagicLink = async (req, res) => {
         //     html: `<a href="${magicLink}">Click here to log in</a>`
         // });
 
-        //for the purpose of uat return link
-        res.json(response(200, {link: magicLink}, 'Magic link sent successfully'));
+
+        res.json(response(200, null, 'Magic link sent successfully'));
     }
     catch (error) {
         console.error('Error sending magic link:', error);

@@ -14,11 +14,11 @@ exports.overrideDecision = async (req, res) => {
 
         // 1. Validation
         if (!['APPROVE', 'DECLINE'].includes(status)) {
-            return res.status(400).json(response(400, null, "Invalid status choice"));
+            return res.json(response(400, null, "Invalid status choice"));
         }
 
         if (!overrideReason || overrideReason.length < 5) {
-            return res.status(400).json(response(400, null, "A valid reason is required for audit trails"));
+            return res.json(response(400, null, "A valid reason is required for audit trails"));
         }
 
         // 2. Prepare the history object
@@ -41,7 +41,7 @@ exports.overrideDecision = async (req, res) => {
         ).populate('eventId');
 
         if (!updatedDecision) {
-            return res.status(404).json(response(404, null, "Decision record not found"));
+            return res.json(response(404, null, "Decision record not found"));
         }
 
         // --- AUDIT LOG ENTRY ---
@@ -56,6 +56,6 @@ exports.overrideDecision = async (req, res) => {
         res.json(response(200, updatedDecision, "Decision history updated successfully"));
     } catch (error) {
         console.error("Override Error:", error);
-        res.status(500).json(response(500, null, "Internal server error during override"));
+        res.json(response(500, null, "Internal server error during override"));
     }
 };

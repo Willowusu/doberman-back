@@ -13,7 +13,7 @@ exports.logout = async (req, res) => {
     // LOG: Data Access
     // It is important to know who viewed the master event list for audit compliance.
     await logAction(req, 'LOGOUT_SUCCESS', 'Authentication', {
-        
+
     });
     req.session.destroy((err) => {
         if (err) {

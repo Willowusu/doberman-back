@@ -184,7 +184,7 @@ exports.createEvent = async (req, res) => {
         }
 
         // 7. Final Response
-        res.status(201).json(response(201, {
+        res.json(response(201, {
             event: savedEvent,
             decision: decisionResult,
             unregistered: !customer
@@ -192,7 +192,7 @@ exports.createEvent = async (req, res) => {
 
     } catch (error) {
         console.error('Error in createEvent:', error);
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 };
 
@@ -241,7 +241,6 @@ exports.getEvents = async (req, res) => {
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        console.log("final query: ", JSON.stringify(finalQuery));
 
         const [docs, total] = await Promise.all([
             Decision.find(finalQuery)
@@ -253,7 +252,7 @@ exports.getEvents = async (req, res) => {
             Decision.countDocuments(finalQuery)
         ]);
 
-        res.status(200).json({
+        res.json({
             status: 200,
             data: {
                 docs,
@@ -264,7 +263,7 @@ exports.getEvents = async (req, res) => {
         });
     } catch (error) {
         console.error("GetEvents Error:", error);
-        res.status(500).json({ status: 500, message: "Internal Server Error" });
+        res.json({ status: 500, message: "Internal Server Error" });
     }
 };
 
@@ -272,9 +271,10 @@ exports.getEvents = async (req, res) => {
 exports.getEventTransactionsByType = async (req, res) => {
     try {
         const { type } = req.params;
+        const { page = 1, limit = 15, search, status, startDate, endDate } = req.query;
         const businessId = new mongoose.Types.ObjectId(req.businessId || req.session.businessId);
 
-        // Map sidebar terms to the specific string used in your JSON payload
+        // 1. Map URL param to DB constant
         const typeMap = {
             'collections': 'collection',
             'remittance': 'remittance',
@@ -283,32 +283,59 @@ exports.getEventTransactionsByType = async (req, res) => {
             'transfer': 'transfer'
         };
 
-        const targetType = typeMap[type.toLowerCase()];
+        // 2. Build Criteria
+        let criteria = [
+            { business: businessId }
+        ];
 
-        // We query Decisions, populate the Event, and filter by the payload inside the event
-        const decisions = await Decision.find({ business: businessId })
-            .populate({
-                path: 'eventId',
-                match: { 'payload.transactionType': targetType } // This filters the populated doc
-            })
-            .sort({ createdAt: -1 })
-            .lean();
+        // 3. Status Filter
+        if (status && status !== 'ALL') {
+            criteria.push({ status: status.toUpperCase() });
+        }
 
-        // Because .populate({ match }) returns null for eventId if it doesn't match, 
-        // we must filter those out manually from the result array.
-        const filteredResults = decisions.filter(d => d.eventId !== null);
+        // 4. Date Range
+        if (startDate || endDate) {
+            let dateQuery = {};
+            if (startDate) dateQuery.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                dateQuery.$lte = end;
+            }
+            criteria.push({ createdAt: dateQuery });
+        }
 
-        // Limit to 50 for performance
-        const finalData = filteredResults.slice(0, 50);
+        const finalQuery = { $and: criteria };
 
-        res.status(200).json({
+        // 5. Populate and Filter by Transaction Type
+        // Since transactionType is inside eventId.payload, we filter in the populate match
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const [docs, total] = await Promise.all([
+            Decision.find(finalQuery)
+                .populate({
+                    path: 'eventId',
+                    match: { 'payload.transactionType': typeMap[type.toLowerCase()] }
+                })
+                .sort({ createdAt: -1 })
+                .lean(),
+            Decision.countDocuments(finalQuery)
+        ]);
+
+        // Filter out decisions where the event didn't match the type
+        const filteredDocs = docs.filter(d => d.eventId !== null);
+        const paginatedDocs = filteredDocs.slice(skip, skip + parseInt(limit));
+
+        res.json({
             status: 200,
-            data: finalData,
-            message: `Filtered ${type} retrieved successfully`
+            data: {
+                docs: paginatedDocs,
+                total: filteredDocs.length,
+                page: parseInt(page),
+                hasMore: filteredDocs.length > skip + paginatedDocs.length
+            }
         });
-
     } catch (error) {
-        console.error("Transaction Fetch Error:", error);
-        res.status(500).json({ status: 500, message: "Error fetching transactions" });
+        res.json({ message: "Error fetching filtered transactions" });
     }
 };

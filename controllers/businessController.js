@@ -7,7 +7,7 @@ const { logAction } = require('../middlewares');
 
 exports.createBusiness = async (req, res) => {
     try {
-        const { name, email, phone, address, webhookUrl, domain } = req.body;
+        const { name, email, phone, address, domain, webhookUrl } = req.body;
 
         //generate a unique API key
         let apiKey = generateApiKey.apiKey();
@@ -37,10 +37,10 @@ exports.createBusiness = async (req, res) => {
             headers: req.headers
         }, 'CREATE_BUSINESS', 'System', { name: business.name });
 
-        res.status(201).json(response(201, newBusiness, 'Business created successfully'));
+        res.json(response(201, newBusiness, 'Business created successfully'));
     } catch (error) {
         console.error('Error creating business:', error);
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 }
 
@@ -51,12 +51,12 @@ exports.getSettings = async (req, res) => {
         const business = await Business.findById(businessId).select('-password -salt'); // Security first
 
         if (!business) {
-            return res.status(404).json(response(404, null, 'Business profile not found'));
+            return res.json(response(404, null, 'Business profile not found'));
         }
 
         res.json(response(200, business, 'Settings retrieved'));
     } catch (error) {
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 };
 
@@ -85,7 +85,7 @@ exports.updateSettings = async (req, res) => {
         res.json(response(200, updatedBusiness, 'Configuration updated successfully'));
     } catch (error) {
         console.error('Update Error:', error);
-        res.status(400).json(response(400, null, 'Invalid update data'));
+        res.json(response(400, null, 'Invalid update data'));
     }
 };
 
@@ -104,6 +104,6 @@ exports.rotateApiKey = async (req, res) => {
 
         res.json(response(200, { apiKey: newKey }, 'API Key rotated successfully. Update your integration immediately.'));
     } catch (error) {
-        res.status(500).json(response(500, null, 'Key rotation failed'));
+        res.json(response(500, null, 'Key rotation failed'));
     }
 };

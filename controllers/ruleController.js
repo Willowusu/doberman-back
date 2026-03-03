@@ -6,7 +6,6 @@ const { logAction } = require('../middlewares');
 const jsonLogic = require('json-logic-js');
 
 
-
 exports.createRule = async (req, res) => {
     try {
         // We now include 'domain' and 'logic' (sent as 'logic' from frontend)
@@ -14,7 +13,7 @@ exports.createRule = async (req, res) => {
         const business = req.session.businessId;
 
         if (!business) {
-            return res.status(401).json(response(401, null, 'Unauthorized'));
+            return res.json(response(401, null, 'Unauthorized'));
         }
 
         const newRule = new Rule({
@@ -38,10 +37,10 @@ exports.createRule = async (req, res) => {
             actionTrigger: action
         });
 
-        res.status(201).json(response(201, newRule, 'Rule deployed successfully'));
+        res.json(response(201, newRule, 'Rule deployed successfully'));
     } catch (error) {
         console.error('Error creating rule:', error);
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 };
 
@@ -58,7 +57,7 @@ exports.getRules = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(50);
 
-       
+
 
         res.json(response(200, rules, "Rules retrieved successfully"));
     } catch (error) {
@@ -79,7 +78,7 @@ exports.getRule = async (req, res) => {
         // Query only for documents matching this specific business
         const rule = await Rule.findOne({ business: businessId, _id: ruleId })
 
-        
+
 
         res.json(response(200, rule, "Rules retrieved successfully"));
     } catch (error) {
@@ -111,7 +110,7 @@ exports.updateRule = async (req, res) => {
         );
 
         if (!updatedRule) {
-            return res.status(404).json(response(404, null, 'Rule not found or unauthorized'));
+            return res.json(response(404, null, 'Rule not found or unauthorized'));
         }
 
         // --- AUDIT LOG ENTRY ---
@@ -124,7 +123,7 @@ exports.updateRule = async (req, res) => {
         res.json(response(200, updatedRule, 'Rule updated successfully'));
     } catch (error) {
         console.error('Error updating rule:', error);
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 };
 
@@ -154,7 +153,7 @@ exports.deleteRule = async (req, res) => {
             ruleName: deletedRule?.name,
             ruleId: ruleId
         });
-        
+
 
         // Send success response
         res.json(response(201, deletedRule, 'Rule deleted successfully'));
@@ -172,10 +171,10 @@ exports.toggleRuleStatus = async (req, res) => {
         const business = req.session.businessId;
         const ruleId = req.params.id;
 
-       
+
         const updatedRuleStatus = await Rule.findOneAndUpdate(
             { business, _id: ruleId },
-            {isActive},
+            { isActive },
         );
         // --- AUDIT LOG ENTRY ---
         // Disabling a rule is often safer than deleting it, but still high-impact.
@@ -233,6 +232,6 @@ exports.testRuleLogic = async (req, res) => {
 
     } catch (error) {
         console.error('Test Rule Error:', error);
-        res.status(500).json(response(500, null, 'Error testing rule logic'));
+        res.json(response(500, null, 'Error testing rule logic'));
     }
 };

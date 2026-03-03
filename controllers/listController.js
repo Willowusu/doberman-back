@@ -12,7 +12,7 @@ exports.createList = async (req, res) => {
         // 1. Check if this exact value already exists for this business
         const existingEntry = await List.findOne({ business, entityType, value });
         if (existingEntry) {
-            return res.status(400).json(response(400, null, 'Entity already exists in a list for this business'));
+            return res.json(response(400, null, 'Entity already exists in a list for this business'));
         }
 
         const newList = new List({ business, listType, entityType, value, reason });
@@ -27,10 +27,10 @@ exports.createList = async (req, res) => {
             reason: reason
         });
 
-        res.status(201).json(response(201, newList, 'List created successfully'));
+        res.json(response(201, newList, 'List created successfully'));
     } catch (error) {
         console.error('Error creating list:', error);
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 }
 
@@ -67,7 +67,7 @@ exports.deleteListEntry = async (req, res) => {
         const deletedEntry = await List.findOneAndDelete({ _id: id, business: businessId });
 
         if (!deletedEntry) {
-            return res.status(404).json(response(404, null, "Entry not found"));
+            return res.json(response(404, null, "Entry not found"));
         }
 
         // --- AUDIT LOG ENTRY ---
@@ -80,6 +80,6 @@ exports.deleteListEntry = async (req, res) => {
 
         res.json(response(200, null, "Entry removed from list"));
     } catch (error) {
-        res.status(500).json(response(500, null, "Internal Server Error"));
+        res.json(response(500, null, "Internal Server Error"));
     }
 };

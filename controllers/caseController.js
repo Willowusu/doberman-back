@@ -12,9 +12,9 @@ exports.getCases = async (req, res) => {
             .populate('customer', 'name email phone riskLevel')
             .sort({ createdAt: -1 });
 
-        res.status(200).json(response(200, cases, "Cases retrieved successfully"));
+        res.json(response(200, cases, "Cases retrieved successfully"));
     } catch (error) {
-        res.status(500).json(response(500, null, error.message));
+        res.json(response(500, null, error.message));
     }
 };
 
@@ -25,11 +25,11 @@ exports.getCaseById = async (req, res) => {
             business: req.businessId
         }).populate('customer event');
 
-        if (!amlCase) return res.status(404).json(response(404, null, "Case not found"));
+        if (!amlCase) return res.json(response(404, null, "Case not found"));
 
-        res.status(200).json(response(200, amlCase));
+        res.json(response(200, amlCase, "Case retrieved successfully"));
     } catch (error) {
-        res.status(500).json(response(500, null, error.message));
+        res.json(response(500, null, error.message));
     }
 };
 
@@ -48,8 +48,8 @@ exports.resolveCase = async (req, res) => {
             { new: true }
         );
 
-        res.status(200).json(response(200, updatedCase, "Case resolved successfully"));
+        res.json(response(200, updatedCase, "Case resolved successfully"));
     } catch (error) {
-        res.status(500).json(response(500, null, error.message));
+        res.json(response(500, null, error.message));
     }
 };

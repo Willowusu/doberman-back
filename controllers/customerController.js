@@ -17,7 +17,7 @@ exports.registerCustomer = async (req, res) => {
             riskProfile = {}
         } = req.body;
 
-        if (!externalId) return res.status(400).json(response(400, null, "externalId is required"));
+        if (!externalId) return res.json(response(400, null, "externalId is required"));
 
         // 1. Run Sanctions Check (Live PEP check)
         const isSanctioned = await checkSanctions(name);
@@ -82,10 +82,10 @@ exports.registerCustomer = async (req, res) => {
             riskLevel: customer.riskLevel
         });
 
-        res.status(201).json(response(201, customer, 'Customer assessed and registered successfully'));
+        res.json(response(201, customer, 'Customer assessed and registered successfully'));
     } catch (error) {
         console.error('Registration Error:', error);
-        res.status(500).json(response(500, null, 'Failed to register customer'));
+        res.json(response(500, null, 'Failed to register customer'));
     }
 };
 
@@ -198,7 +198,7 @@ exports.getCustomerHistory = async (req, res) => {
 
         // 1. Get the customer to find their externalId
         const customer = await Customer.findOne({ _id: id, business: businessId });
-        if (!customer) return res.status(404).json(response(404, null, 'Customer not found'));
+        if (!customer) return res.json(response(404, null, 'Customer not found'));
 
         /**
          * 2. Find all Decisions for this business.
@@ -230,6 +230,6 @@ exports.getCustomerHistory = async (req, res) => {
         res.json(response(200, filteredDecisions, 'History fetched'));
     } catch (error) {
         console.error('History Fetch Error:', error);
-        res.status(500).json(response(500, null, 'Internal error'));
+        res.json(response(500, null, 'Internal error'));
     }
 };

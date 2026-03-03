@@ -16,7 +16,7 @@ exports.getCustomerAlerts = async (req, res) => {
 
         res.json(response(200, alerts, 'Alert definitions fetched'));
     } catch (error) {
-        res.status(500).json(response(500, null, 'Internal error'));
+        res.json(response(500, null, 'Internal error'));
     }
 };
 
@@ -28,7 +28,7 @@ exports.deleteAlert = async (req, res) => {
 
         const deletedAlert = await Alert.findOneAndDelete({ business, _id: id });
 
-        if (!deletedAlert) return res.status(404).json(response(404, null, 'Alert not found'));
+        if (!deletedAlert) return res.json(response(404, null, 'Alert not found'));
 
         // --- AUDIT LOG ENTRY ---
         await logAction(req, 'DELETE_ALERT', 'Risk Monitoring', {
@@ -39,7 +39,7 @@ exports.deleteAlert = async (req, res) => {
 
         res.json(response(200, deletedAlert, 'Alert removed successfully'));
     } catch (error) {
-        res.status(500).json(response(500, null, 'Internal Server Error'));
+        res.json(response(500, null, 'Internal Server Error'));
     }
 };
 
@@ -70,10 +70,10 @@ exports.createAlert = async (req, res) => {
             alertType: type || 'SIMPLE',
             targetCustomer: customer
         });
-        res.status(201).json(response(201, newAlert, 'Alert monitoring active'));
+        res.json(response(201, newAlert, 'Alert monitoring active'));
     } catch (error) {
         console.error('Create Alert Error:', error);
-        res.status(500).json(response(500, null, 'Failed to create alert'));
+        res.json(response(500, null, 'Failed to create alert'));
     }
 };
 
@@ -91,7 +91,7 @@ exports.getCustomerAlertLogs = async (req, res) => {
 
         res.json(response(200, logs, 'Alert activity logs fetched'));
     } catch (error) {
-        res.status(500).json(response(500, null, 'Internal error fetching logs'));
+        res.json(response(500, null, 'Internal error fetching logs'));
     }
 };
 
@@ -116,6 +116,6 @@ exports.getGlobalAlertFeed = async (req, res) => {
         res.json(response(200, feed, 'Global alert feed synchronized'));
     } catch (error) {
         console.error('Feed Error:', error);
-        res.status(500).json(response(500, null, 'Failed to fetch live feed'));
+        res.json(response(500, null, 'Failed to fetch live feed'));
     }
 };

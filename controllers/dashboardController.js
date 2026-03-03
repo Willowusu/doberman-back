@@ -3,6 +3,7 @@ const Event = require('../models/event');
 const Alert = require('../models/alert');
 const Decision = require('../models/decision'); // Ensure this is imported
 const mongoose = require('mongoose');
+const response = require('../services/response');
 
 exports.getDashboardStats = async (req, res) => {
     try {
@@ -91,9 +92,9 @@ exports.getDashboardStats = async (req, res) => {
             }))
         };
 
-        res.status(200).json({ status: 200, data: stats });
+        res.json(response(200, stats, "Dashboard metrics fetched successfully"));
     } catch (error) {
         console.error("Dashboard Aggregation Error:", error);
-        res.status(500).json({ status: 500, message: "Failed to fetch dashboard metrics" });
+        res.json(response(500, null, "Failed to fetch dashboard metrics"));
     }
 };

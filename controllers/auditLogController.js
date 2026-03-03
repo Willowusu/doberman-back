@@ -16,7 +16,7 @@ exports.getAuditLogs = async (req, res) => {
     res.json(response(200, logs));
 };
 
-exports.logSanctionScreening =async (req, res) => {
+exports.logSanctionScreening = async (req, res) => {
     const { query, resultsFound } = req.body;
 
     await logAction(req, 'SANCTION_SCREEN_PERFORMED', 'Compliance', {
