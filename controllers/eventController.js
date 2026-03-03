@@ -196,30 +196,75 @@ exports.createEvent = async (req, res) => {
     }
 };
 
-//this gets the events and the decisions attached to the events
-exports.getEvents = async (req, res) => {
-    let limit = parseInt(req.query.limit) || 50; // Default to 50 if not provided
-    try {
-        const businessId = req.session.businessId;
 
-        if (!businessId) {
-            return res.json(response(401, null, "Unauthorized: No business context found"));
+
+exports.getEvents = async (req, res) => {
+    try {
+        const { page = 1, limit = 15, search, status, startDate, endDate } = req.body.params;
+        const businessId = new mongoose.Types.ObjectId(req.businessId || req.session.businessId);
+
+
+        // 1. Initialize an array for mandatory conditions
+        let criteria = [{ business: businessId }];
+
+        // 2. Status Filter - Ensure it's exactly what's in the DB (APPROVE, REVIEW, DECLINE)
+        if (status && status !== 'ALL') {
+            criteria.push({ status: status.toUpperCase() });
         }
 
-        // Query only for documents matching this specific business
-        const events = await Decision.find({ business: businessId }).populate('eventId')
-            .sort({ createdAt: -1 })
-            .limit(limit);
+        // 3. Date Range
+        if (startDate || endDate) {
+            let dateQuery = {};
+            if (startDate) dateQuery.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                dateQuery.$lte = end;
+            }
+            criteria.push({ createdAt: dateQuery });
+        }
 
-        // LOG: Data Access
-        // It is important to know who viewed the master event list for audit compliance.
-        await logAction(req, 'VIEW_EVENT_LOGS', 'Event Monitoring', {
-            resultsCount: events.length
+        // 4. Search Logic - Wrapped in its own OR but kept inside the AND criteria
+        if (search && search.trim() !== '') {
+            const searchRegex = new RegExp(search, 'i');
+            criteria.push({
+                $or: [
+                    { "triggeredRules.name": searchRegex },
+                    { "manualOverrides.reason": searchRegex },
+                    { "status": searchRegex } // Optional: allow searching by status name too
+                ]
+            });
+        }
+
+        // Combine everything into a single query object
+        const finalQuery = { $and: criteria };
+
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        console.log("final query: ", JSON.stringify(finalQuery));
+
+        const [docs, total] = await Promise.all([
+            Decision.find(finalQuery)
+                .populate('eventId')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean(),
+            Decision.countDocuments(finalQuery)
+        ]);
+
+        res.status(200).json({
+            status: 200,
+            data: {
+                docs,
+                total,
+                page: parseInt(page),
+                hasMore: total > skip + docs.length
+            }
         });
-
-        res.json(response(200, events, "Events retrieved successfully"));
     } catch (error) {
-        res.json(response(500, null, "Error fetching events"));
+        console.error("GetEvents Error:", error);
+        res.status(500).json({ status: 500, message: "Internal Server Error" });
     }
 };
 

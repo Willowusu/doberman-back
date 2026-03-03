@@ -50,7 +50,7 @@ exports.calculateCustomerRisk = async (customer) => {
 
     // Final Categorization
     let rate, level;
-    if (score <= 40) { rate = 1; level = 'Low Risk'; }
+    if (score <= 40) { rate = 1; level = 'Low'; }
     else if (score <= 50) { rate = 2; level = 'Medium-Risk'; }
     else if (score <= 60) { rate = 3; level = 'Medium-high'; }
     else { rate = 4; level = 'High'; }

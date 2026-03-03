@@ -5,6 +5,8 @@ const { logAction } = require('../middlewares');
 const { calculateCustomerRisk } = require('../services/calculateCustomerRisk');
 const { checkSanctions } = require('../services/sanctionsCheck');
 const { searchPepList } = require('../services/pepService');
+const mongoose = require('mongoose');
+
 
 exports.registerCustomer = async (req, res) => {
     try {
@@ -88,59 +90,78 @@ exports.registerCustomer = async (req, res) => {
 };
 
 
+
 exports.getCustomers = async (req, res) => {
     try {
-        // 1. Destructure 'search' from the query params
         const { page = 1, limit = 10, startDate, endDate, search, riskLevel } = req.query;
-        const query = { business: req.session.businessId };
 
+        // 1. CAST the businessId immediately
+        if (!req.session.businessId) {
+            return res.json(response(401, null, "Unauthorized"));
+        }
+        const busId = new mongoose.Types.ObjectId(req.session.businessId);
 
-        // 1. Add Risk Level Filter
+        const query = { business: busId };
+
+        // 2. Risk Level Filter
         if (riskLevel && riskLevel !== 'ALL') {
             query.riskLevel = riskLevel;
         }
 
-        // 2. Date Range Filtering
+        // 3. Date Range Filtering
         if (startDate || endDate) {
             query.createdAt = {};
             if (startDate) query.createdAt.$gte = new Date(startDate);
-            if (endDate) query.createdAt.$lte = new Date(endDate);
+            if (endDate) {
+                // Set endDate to the very end of the day (23:59:59)
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = end;
+            }
         }
 
-        // 3. SEARCH LOGIC GOES HERE
+        // 4. Search Logic
         if (search) {
-            query.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-                { externalId: { $regex: search, $options: 'i' } }
+            query.$and = [
+                { business: busId }, // Ensure search is scoped to the business
+                {
+                    $or: [
+                        { name: { $regex: search, $options: 'i' } },
+                        { email: { $regex: search, $options: 'i' } },
+                        { externalId: { $regex: search, $options: 'i' } }
+                    ]
+                }
             ];
+            // Remove the top-level business key if using $and to avoid conflicts
+            delete query.business;
         }
 
-        const skip = (page - 1) * limit;
-
+        const skip = (parseInt(page) - 1) * parseInt(limit);
 
         const [docs, total] = await Promise.all([
             Customer.find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit)),
+                .limit(parseInt(limit))
+                .lean(), // Faster performance for read-only
             Customer.countDocuments(query)
         ]);
 
 
-
-        res.status(200).json({
-            status: 200,
-            data: {
+        res.json(response(
+            200,
+            {
                 docs,
                 total,
                 page: parseInt(page),
+                // Correct hasMore logic
                 hasMore: total > skip + docs.length
-            }
-        });
+            },
+            "Customers fetched successfully"
+        ));
     } catch (error) {
         console.error("GetCustomers Error:", error);
-        res.status(500).json({ message: "Server error" });
+        res.json(response(500, null, "Server error"));
     }
 };
 
