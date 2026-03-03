@@ -1,6 +1,6 @@
 require('dotenv').config();
 const response = require('../services/response');
-const SystemUser = require('../models/SystemUser');
+const SystemUser = require('../models/systemUser');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
