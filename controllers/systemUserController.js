@@ -61,7 +61,7 @@ exports.sendMagicLink = async (req, res) => {
         // 2. Send Email
         const magicLink = `${process.env.FRONTEND_URL}/verify?token=${token}`;
 
-        sendEmail('khorus43@gmail.com', 'Test Subject', 'Login', magicLink);
+        // sendEmail('khorus43@gmail.com', 'Test Subject', 'Login', magicLink);
         console.log(`Magic link for ${email}: ${magicLink}`);
         // await mailer.sendMail({
         //     to: email,
@@ -70,7 +70,7 @@ exports.sendMagicLink = async (req, res) => {
         // });
 
 
-        res.json(response(200, null, 'Magic link sent successfully'));
+        res.json(response(200, {link: magicLink}, 'Magic link sent successfully'));
     }
     catch (error) {
         console.error('Error sending magic link:', error);
